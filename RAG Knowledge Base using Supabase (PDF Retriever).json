@@ -1,0 +1,448 @@
+{
+  "name": "RAG Knowledge Base using Supabase (PDF Retriever)",
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "insert",
+        "tableName": {
+          "__rl": true,
+          "value": "rag_documents",
+          "mode": "list",
+          "cachedResultName": "rag_documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        0
+      ],
+      "id": "784d1d3c-399f-4e23-a77c-1de49683b63a",
+      "name": "Supabase Vector Store",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gftq7Bn0iitHa3N3",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "=rag-ingest",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -576,
+        208
+      ],
+      "id": "5cbdb95a-b0ec-4811-820a-4fa1a57c8a29",
+      "name": "Weebhook -ingest PDF",
+      "webhookId": "e023240f-aff1-4428-8b80-8663d8acf54a"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        240
+      ],
+      "id": "7c9b3c93-4073-4279-86d6-bab447249e76",
+      "name": "Gemini Embeddings ingest",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "93k17xZexxH9am8I",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "binary",
+        "textSplittingMode": "custom",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        240
+      ],
+      "id": "567ff9d6-a974-40c4-aeb0-9bc6292fd933",
+      "name": "Pdf Document  Loader"
+    },
+    {
+      "parameters": {
+        "chunkSize": 1500,
+        "chunkOverlap": 150
+      },
+      "type": "@n8n/n8n-nodes-langchain.textSplitterCharacterTextSplitter",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        448
+      ],
+      "id": "904ca6e7-177d-415a-ad5b-87b06079c19a",
+      "name": "Recursive Character Text Splitter"
+    },
+    {
+      "parameters": {
+        "jsCode": "const docCount = $input.all().length;\n\nreturn [{\n  json: {\n    status: 'success',\n    chunks_stored: docCount,\n    message: `Successfully ingested and vectorized into ${docCount} chunks.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        144,
+        208
+      ],
+      "id": "0e25c377-48bb-4011-9237-a47244fbf26e",
+      "name": "Code - Ingest Summary"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        368,
+        208
+      ],
+      "id": "13507133-5077-4199-982e-3b5eb95b6a56",
+      "name": "Respond -ingest Done"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "rag-query",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        192,
+        416
+      ],
+      "id": "dde443bc-4af2-42af-a370-e22ce5b6064d",
+      "name": "Webhook - asking question",
+      "webhookId": "6d22d3a7-f3e0-4085-9a12-41aebb606c73"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.question }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainRetrievalQa",
+      "typeVersion": 1.7,
+      "position": [
+        672,
+        416
+      ],
+      "id": "7d2a2096-be53-4800-a052-44ab65078fbc",
+      "name": "Question and Answer Chain"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxOutputTokens": 700,
+          "temperature": 0.1
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        656,
+        640
+      ],
+      "id": "8019dde1-dd2b-44e7-bdd9-81a020f74838",
+      "name": "Google Gemini - 3flash",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "93k17xZexxH9am8I",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableName": {
+          "__rl": true,
+          "value": "rag_documents",
+          "mode": "list",
+          "cachedResultName": "rag_documents"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreSupabase",
+      "typeVersion": 1.3,
+      "position": [
+        624,
+        784
+      ],
+      "id": "15a281ae-2cb9-4230-beee-b2fb6434fd28",
+      "name": "Supabase Vector Store1 = Retrieval",
+      "credentials": {
+        "supabaseApi": {
+          "id": "gftq7Bn0iitHa3N3",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const answer = $input.first().json.response ||'';\nconst question = $('Code -- Parse & Validate Question').first().json.question;\n\nconst notFound = answer.startsWith('❌');\nconst partial = answer.startsWith('⚠️');\nconst hasCite = answer.includes('📖 Source:');\nconst wordCount = answer.split(/\\s+/).filter(Boolean).length;\n\nconst debugFlags = [];\n\nif (!hasCite && !notFound) debugFlags.push('missing_citation');\nif (wordCount < 15) debugFlags.push('very_short_answer');\nif (answer.toLowerCase().includes('i don\\'t know') && !notFound)\n  debugFlags.push('hallucinated_fallback');\n\nconst httpStatus = notFound ? 404 : 200; // ternary operator\n\n\nreturn [{\n  json: {\n    question,\n    answer,\n    status: notFound ? 'not_found' : (partial ? 'partial' : 'ok'),\n    has_citation: hasCite,\n    http_status: httpStatus,\n    debug: debugFlags.length > 0 ? debugFlags : undefined,\n    answered_at: new Date().toISOString()\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1248,
+        416
+      ],
+      "id": "1a327055-e7c3-4695-9487-4e9a25480068",
+      "name": "Code = Fallback & Debug Handler"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        624,
+        992
+      ],
+      "id": "88e48e55-59f0-4d62-b17e-d8ebd09bff26",
+      "name": "Embeddings Google Gemini-Query",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "93k17xZexxH9am8I",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "topK": 5
+      },
+      "type": "@n8n/n8n-nodes-langchain.retrieverVectorStore",
+      "typeVersion": 1,
+      "position": [
+        864,
+        624
+      ],
+      "id": "28b3606e-82f7-4a48-a3e2-b3066997f9ae",
+      "name": "Vector Store Retriever-top k"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": "={{  $json.http_status || 200 }}"
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1040,
+        416
+      ],
+      "id": "9993048c-a53e-4b81-bbd8-88bfc88abbce",
+      "name": "Respond --Answer"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = $input.first().json;\nconst body = input.body || input;\nconst question = (body.question || '').trim();\n\nif (!question) {\n  throw new Error('Missing field: send {\"question\": \"your query here\"} in the POST body.');\n}\n\nreturn [{ json: { question, received_at: new Date().toISOString() } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        416
+      ],
+      "id": "c6a7a07a-eafe-49a4-a670-e059589c1f10",
+      "name": "Code -- Parse & Validate Question"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Weebhook -ingest PDF": {
+      "main": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Embeddings ingest": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Pdf Document  Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Supabase Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recursive Character Text Splitter": {
+      "ai_textSplitter": [
+        [
+          {
+            "node": "Pdf Document  Loader",
+            "type": "ai_textSplitter",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Code - Ingest Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code - Ingest Summary": {
+      "main": [
+        [
+          {
+            "node": "Respond -ingest Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - asking question": {
+      "main": [
+        [
+          {
+            "node": "Code -- Parse & Validate Question",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini - 3flash": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase Vector Store1 = Retrieval": {
+      "ai_vectorStore": [
+        [
+          {
+            "node": "Vector Store Retriever-top k",
+            "type": "ai_vectorStore",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Question and Answer Chain": {
+      "main": [
+        [
+          {
+            "node": "Respond --Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini-Query": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Supabase Vector Store1 = Retrieval",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Retriever-top k": {
+      "ai_retriever": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "ai_retriever",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond --Answer": {
+      "main": [
+        [
+          {
+            "node": "Code = Fallback & Debug Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code -- Parse & Validate Question": {
+      "main": [
+        [
+          {
+            "node": "Question and Answer Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "53d5ca8e-99fd-4395-b754-4bb994bb013d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "987bd47cce7f51505dfc545c5664527be588b61e88936b2f5fe21afd9b1591de"
+  },
+  "nodeGroups": [],
+  "id": "7htmyf0R5idl5fou",
+  "tags": []
+}
