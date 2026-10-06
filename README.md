@@ -8,7 +8,7 @@ Built with **n8n** (the workflow brain), **Supabase** (the memory), and **Google
 
 
 
-![Workflow screenshot](./screenshot.png)
+![Workflow screenshot](./Workflow2.png)
 
 
 
